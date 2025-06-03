@@ -1,4 +1,4 @@
-# Open Sources HARP Fabrication Machine
+# Open Sourced HARP Fabrication Machine
 
 ## Introduction
 
