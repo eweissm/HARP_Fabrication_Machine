@@ -24,6 +24,8 @@
 
 │   └── FullAssembly.sldasm
 
+│   └── FullAssembly.step
+
 │   └── ComponentNamingTraker.xlsx
 
 │   └── Part Files
