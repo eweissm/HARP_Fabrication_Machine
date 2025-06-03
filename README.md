@@ -24,6 +24,8 @@
 
 │   └── FullAssembly.sldasm
 
+│   └── ComponentNamingTraker.xlsx
+
 │   └── Part Files
 
 │   └── Work Heads
