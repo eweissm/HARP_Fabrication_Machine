@@ -10,6 +10,56 @@ Enclosed in this repository is:
 5.  The continuum robot controllers
 6.  All design files and codes for the untethered quadruped
 
+## Table of Contents
+
+- [HARP Replication Resources](#harp-replication-resources)
+  - [File Directory](#file-directory)
+
+- [Open Sourced HARP Fabrication Machine](#open-sourced-harp-fabrication-machine)
+  - [Introduction](#introduction)
+
+- [GeometricHARP_CADFiles](#geometricharp_cadfiles)
+  - [The Ribbed Tube](#the-ribbed-tube)
+  - [The 4 Point Star](#the-4-point-star)
+  - [The 5 Point Star](#the-5-point-star)
+  - [The 6 Point Star](#the-6-point-star)
+  - [Print Settings](#print-settings)
+
+- [Easy Fabrication Resources](#easy-fabrication-resources)
+  - [Aim](#aim)
+  - [Instructions](#instructions)
+  - [Required Materials](#required-materials)
+
+- [Untethered_HARP_Quadruped](#untethered_harp_quadruped)
+  - [Bill of Materials (BOM)](#bill-of-materials-bom)
+  - [CAD Files](#cad-files)
+  - [Simulation](#simulation)
+  - [Electronics](#electronics)
+
+- [HarpController](#harpcontroller)
+  - [Overview](#overview)
+  - [Project Structure](#project-structure-1)
+  - [Control Modes](#control-modes)
+    - [Closed-Loop Control](#closed-loop-control)
+    - [Open-Loop Control](#open-loop-control)
+    - [Bode Analysis](#bode-analysis)
+  - [Dependencies](#dependencies)
+  - [Usage Notes](#usage-notes)
+
+- [HARP Continuum Robot Control](#harp-continuum-robot-control)
+  - [System Overview](#system-overview)
+  - [Main Components](#main-components)
+    - [ContinuumRobotArduino.ino](#continuumrobotarduinoino)
+    - [ContinuumRobotControl_Modelless.py](#continuumrobotcontrol_modellesspy)
+    - [ContinuumRobotControl_Modelless_BODE.py](#continuumrobotcontrol_modelless_bodepy)
+    - [ContinuumRobotControl_ConstantCurvature.py](#continuumrobotcontrol_constantcurvaturepy)
+    - [ContinuumRobotControl_ConstantCurvature_BODE.py](#continuumrobotcontrol_constantcurvature_bodepy)
+  - [Dependencies](#dependencies-1)
+  - [Usage](#usage)
+  - [Notes](#notes)
+
+
+
 ## File Directory
 
 ```plaintext
@@ -55,13 +105,13 @@ Enclosed in this repository is:
 │         └── robot_log_*.csv
 ```
 
-
-
+---
 # Open Sourced HARP Fabrication Machine
 
 ## Introduction
 Note: we have seperated the "work heads" (the parts which grab or directly interact with the muscles) since these parts are often modified for specific muscles being fabricated
 
+---
 
 # GeometricHARP_CADFiles
 Presented here are all the CAD files for the HARPs which derive their anisotropy from geometry alone. 
@@ -112,6 +162,7 @@ A 2 mm brass rod is used as the mandrel
 - Support on, Snug
 - 2 raft layers used
 
+---
   
 # Easy Fabrication Resources
 
@@ -134,6 +185,7 @@ See BOM.xls
 - Barbed plug
 - Syringe (10ml)
 
+---
 
 # Untethered_HARP_Quadruped
 **Author:** Eric Weissman  
@@ -141,23 +193,19 @@ See BOM.xls
 
 This repository contains all design files, simulation tools, and documentation needed to build and test an untethered quadruped robot actuated by HARP-driven pneumatic legs.
 
----
 
 ##  Bill of Materials (BOM)
 
 - A complete list of components and part numbers is provided in:  
   **`BOM.xls`**
 
----
 
-## 🛠 CAD Files
+## CAD Files
 
 - Full mechanical assembly in STEP format:  
   **`CAD Files/LongLegQuadAssembly Final.STEP`**
 
 - Use any CAD software that supports `.STEP` files (e.g., SolidWorks, Fusion 360, FreeCAD) to view or modify.
-
----
 
 ##  Simulation
 
@@ -168,7 +216,6 @@ This repository contains all design files, simulation tools, and documentation n
   Please install it before running the simulation:  
   [Peter Corke's Robotics Toolbox](https://petercorke.com/toolboxes/robotics-toolbox/)
 
----
 
 ##  Electronics
 
@@ -190,20 +237,6 @@ This repository contains all design files, simulation tools, and documentation n
 
 This codebase provides tools for both **open-loop** and **closed-loop** control of a pneumatic continuum actuator known as the HARP (Hydraulically Actuated Robotic Pneumatic system). It includes scripts for real-time pressure control, Bode analysis, and isotonic actuation experiments, all integrated with an Arduino Nano and pressure regulators.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Project Structure](#project-structure)
-- [Control Modes](#control-modes)
-  - [Closed-Loop Control](#closed-loop-control)
-  - [Open-Loop Control](#open-loop-control)
-  - [Bode Analysis](#bode-analysis)
-  - [Isotonic Tests](#isotonic-tests)
-- [Dependencies](#dependencies)
-- [Usage Notes](#usage-notes)
-- [License](#license)
-
----
 
 ## Overview
 
@@ -216,7 +249,6 @@ Four main control modes are implemented:
 3. **Bode Analysis**
 4. **Isotonic Characterization**
 
----
 
 ## Project Structure
 
@@ -230,7 +262,7 @@ Four main control modes are implemented:
 | `BodeAnalysis.py`           | Script for **logging Bode analysis response**.                             |
 | `Data/`, `Data_final/`      | Output folders for CSV logs.                                               |
 
----
+
 
 ## Control Modes
 
@@ -259,7 +291,7 @@ maxP            # Max pressure (psi)
 ConfigFile      # Path to muscle configuration
 ```
 
----
+
 
 ## Open-Loop Control
 
@@ -284,7 +316,7 @@ edgeTime = 3        # Seconds to hold pressure at max and min
 maxP = 40           # Max pressure in psi
 freq = 100          # Loop update frequency in Hz
 ```
----
+
 
 ## Bode Analysis
 
@@ -308,7 +340,6 @@ n_floats_to_arduino = 6
 output_file = "Data_final/BodeAnalysis_<experiment_name>.csv"
 ```
 
----
 
 ## Usage Notes
 
@@ -322,6 +353,7 @@ output_file = "Data_final/BodeAnalysis_<experiment_name>.csv"
 
 
 
+---
 
 # HARP Continuum Robot Control
 
@@ -330,7 +362,6 @@ output_file = "Data_final/BodeAnalysis_<experiment_name>.csv"
 
 This repository contains the full control stack for a soft continuum robot system (HARP) actuated using pneumatic artificial muscles. It includes Arduino firmware and multiple Python control scripts for modelless and model-based control approaches, using OptiTrack motion capture for feedback.
 
----
 
 ## System Overview
 
@@ -345,7 +376,6 @@ This repository contains the full control stack for a soft continuum robot syste
 - **Interface:** Real-time visualization via PyQtGraph
 - **Data Logging:** CSV export of pose, target, error, and pressures
 
----
 
 ## Main Components
 
@@ -360,7 +390,7 @@ This repository contains the full control stack for a soft continuum robot syste
 - Max pressure constrained to my maxP variable
 
 
----
+
 
 ### `ContinuumRobotControl_Modelless.py`
 
@@ -373,7 +403,7 @@ This repository contains the full control stack for a soft continuum robot syste
 - Tracks arbitrary SVG-defined paths or sine wave trajectories
 - Logs control and performance data to CSV
 
----
+
 
 ### `ContinuumRobotControl_Modelless_BODE.py`
 
@@ -382,7 +412,7 @@ This repository contains the full control stack for a soft continuum robot syste
 - Adds BODE plot generation and signal injection tools
 - Useful for identifying system response characteristics
 
----
+
 
 ### `ContinuumRobotControl_ConstantCurvature.py`
 
@@ -395,7 +425,7 @@ This repository contains the full control stack for a soft continuum robot syste
 - PID feedback applied to curvature and angle errors
 - GUI for PID tuning + trajectory tracking
 
----
+
 
 ### `ContinuumRobotControl_ConstantCurvature_BODE.py`
 
@@ -404,7 +434,7 @@ This repository contains the full control stack for a soft continuum robot syste
 - Adds experimental tools for step response and BODE characterization
 - Useful for validating the beam bending model and controller tuning
 
----
+
 
 ## Dependencies
 
@@ -422,7 +452,7 @@ This repository contains the full control stack for a soft continuum robot syste
 - `MoCapData.py`
 - `DataDescriptions.py`
 
----
+
 
 ##  Usage
 
@@ -436,7 +466,7 @@ This repository contains the full control stack for a soft continuum robot syste
 6. Observe real-time pose tracking and pressure display.
 7. Use `Ctrl+C` to safely stop the program and flush logs.
 
----
+
 
 ## Notes
 * Live trajectory tracking uses SVG paths; modify or replace ASUlogo.svg as needed.
