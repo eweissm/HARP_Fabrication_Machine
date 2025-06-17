@@ -1,7 +1,7 @@
 # HARP Replication Resources
 Here we present all necessary resources for replication of the HARP, barring what is already present in the manuscript and supplemental materials.
 
-Enclosed in this repsitory is:
+Enclosed in this repository is:
 
 1.  The open sources fabrication platform
 2.  CAD files for the geometric anisotropy HARP
