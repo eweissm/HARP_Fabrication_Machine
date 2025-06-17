@@ -50,9 +50,9 @@ Enclosed in this repsitory is:
 │   └── DataDescriptions.py
 │   └── MoCapData.py
 │   └── RobotLineArt/
-│   └──   └── ASUlogo.svg
+│   │     └── ASUlogo.svg
 │   └── RobotData/
-│   └──   └── robot_log_*.csv
+│         └── robot_log_*.csv
 ```
 
 # Open Sourced HARP Fabrication Machine
