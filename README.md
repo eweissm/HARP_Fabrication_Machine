@@ -55,50 +55,114 @@ Enclosed in this repsitory is:
 │         └── robot_log_*.csv
 ```
 
+
+
 # Open Sourced HARP Fabrication Machine
 
 ## Introduction
-
-## File Directory
-
-**Bill of Materials**
-
-├──BOM.xlsx
-
-**Build Instructions**
-
-├──....pdf
-
-**User Guide**
-
-├──___.pdf
-
-├──tutorialVideo.mp4
-
-**CAD Files**
-
-├──CAD Files
-
-│   └── FullAssembly.sldasm
-
-│   └── FullAssembly.step
-
-│   └── ComponentNamingTraker.xlsx
-
-│   └── Part Files
-
-│   └── Work Heads
-
 Note: we have seperated the "work heads" (the parts which grab or directly interact with the muscles) since these parts are often modified for specific muscles being fabricated
 
-**Software**
 
-├──Source Code
+# GeometricHARP_CADFiles
+Presented here are all the CAD files for the HARPs which derive their anisotropy from geometry alone. 
 
-├──HARP_GUI.exe
+### The ribbed tube uses 2 files:
 
-├──GUI_UserGuide.pdf
+|--RibbedTube_mold.sldprt
 
-**Electronics**
+|--RibbedTube_mold_top.sldprt
 
-├──Schematics.pdf
+A 2 mm brass rod is used as the mandrel
+
+
+### The 4 point star uses 3 files:
+
+|--StarTube_mold_bottom_5_21_4POINT.sldprt
+
+|--StarTube_mold_TOP_5_21_4POINT.sldprt
+
+|--StarTube_mold_TOP_5_21_4POINT_SLA.sldprt
+
+
+
+### The 5 point star uses 3 files:
+
+|--StarTube_mold_bottom_5_21.sldprt
+
+|--StarTube_mold_TOP_5_21.sldprt
+
+|--StarTube_mold_TOP_5_21.sldprt
+
+
+
+### The 4 point star uses 3 files:
+
+|--StarTube_mold_bottom_5_21_6POINT.sldprt
+
+|--StarTube_mold_TOP_5_21_6POINT.sldprt
+
+|--StarTube_mold_TOP_5_21_6POINT.sldprt
+
+
+## Print Settings
+
+- All parts were printed on a Prusa MK4 with AmazonBasic PLA. 
+- Layer height was 0.15mm.
+- Infill density = 25%
+- Support on, Snug
+- 2 raft layers used
+
+  
+# Easy Fabrication Resources
+
+# Untethered_HARP_Quadruped
+**Author:** Eric Weissman  
+**Last Updated:** May 2025
+
+This repository contains all design files, simulation tools, and documentation needed to build and test an untethered quadruped robot actuated by HARP-driven pneumatic legs.
+
+---
+
+##  Bill of Materials (BOM)
+
+- A complete list of components and part numbers is provided in:  
+  **`BOM.xls`**
+
+---
+
+## 🛠 CAD Files
+
+- Full mechanical assembly in STEP format:  
+  **`CAD Files/LongLegQuadAssembly Final.STEP`**
+
+- Use any CAD software that supports `.STEP` files (e.g., SolidWorks, Fusion 360, FreeCAD) to view or modify.
+
+---
+
+##  Simulation
+
+- MATLAB simulation model of a single leg is provided in:  
+  **`Simulation/QuadLegModel_5_1.m`**
+
+- This model uses **Peter Corke's Robotics Toolbox** for MATLAB.  
+  Please install it before running the simulation:  
+  [Peter Corke's Robotics Toolbox](https://petercorke.com/toolboxes/robotics-toolbox/)
+
+---
+
+##  Electronics
+
+- Custom controller PCB design is provided in Eagle format:  
+  **`Electronics/Quadruped+Board.zip`**
+
+- Includes:
+  - `.brd` and `.sch` Eagle design files
+  - Part placements and annotations
+
+- Compatible with Autodesk Eagle and Fusion 360 Electronics.
+
+---
+
+# HarpController
+
+# HARP Continuum Robot Control
