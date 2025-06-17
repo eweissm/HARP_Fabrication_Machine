@@ -1,0 +1,208 @@
+#include <Servo.h>
+
+byte SolenoidPins[] = { 2, 3, 5, 6, 8, 9, 4, 7 };
+#define nPins 8
+#define ESCPin 10
+#define PressureSensorPin A7
+
+//Create servo object
+Servo ESC;
+
+int ValveSetPoints[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+float setPressure = 35;
+
+//Exhaust PID params
+float K = .5;
+float D = .05;
+float I = 1;
+
+//ESC PID Params
+float K_P = .1;
+float D_P = .0001;
+float I_P = 1;
+
+int maxAllowedPressure_SpoolUp = 95;
+int OperatingPressureLim_Upper = 40;
+int OperatingPressureLim_Lower = 25;
+int CycleTime = 2000;  // ms
+
+float error = 0;
+float error_dot;
+float prevError = 0;
+int PressureReadingVal;
+double PressureVal;
+float prevTime;
+float time = 0;
+float errorIntegral;
+float SetPoint;
+float Pump_SetPoint;
+bool SafteyLimit = 0;
+bool atPressure = 0;
+int PhaseTime;
+float DeltaT;
+
+void setup() {
+
+  for (unsigned i = 0; i < nPins; i++) {
+    pinMode(SolenoidPins[i], OUTPUT);
+  }
+
+  pinMode(PressureSensorPin, INPUT);
+
+  Serial.begin(9600);
+
+  ESC.attach(ESCPin, 1000, 2000);  //control ESC as a servo w/ a 1-2 ms pwm
+
+  // set exhaust pin pwm freq (Pins 3 and 11)
+  TCCR2B = TCCR2B & B11111000 | B00000111;  // set timer 2 divisor to 1024 for PWM frequency of 30.64 Hz
+
+  // zero calibration for ESC
+  Serial.println("Calibrating ESC...");
+  ESC.write(0);
+  delay(8000);  //uncomment me
+
+  //Open Exaust
+  ValveSetPoints[1] = 255;
+  SetValveState(ValveSetPoints);
+
+  // Spool up ESC
+  Serial.println("Spooling up Pump...");
+
+  ESC.write(180);  // spool up pump
+  delay(1000);     //uncomment me
+
+  // //Begin Closing valve
+  // int TimeToCloseValve = 300;  // in 10 ms increments
+  // for (int i = TimeToCloseValve; i > 0; i--) {
+  //   setPressure[1] = i;
+  //   SetValveState(setPressure);
+  //   delay(10);
+  // }
+  ESC.write(160);
+}
+
+
+
+void loop() {
+
+  String state = "";
+
+  prevTime = time;
+  time = millis() / 1000.0;  // time in sec
+  DeltaT = time - prevTime;
+
+  // get sensor readings
+  PressureReadingVal = analogRead(PressureSensorPin);
+  PressureVal = map(PressureReadingVal, 103, 921, 0, 100);
+
+  // set up PID
+  prevError = error;
+  error = setPressure - PressureVal;
+  error_dot = (error - prevError) / DeltaT;
+  errorIntegral = errorIntegral + DeltaT * 0.5 * (error + prevError);
+
+  //exhaust set point
+  SetPoint = int(K * error + error_dot * D + errorIntegral * I);
+  // set saturation limits
+  if (SetPoint > 255) {
+    SetPoint = 255;
+  }
+  if (SetPoint < 0) {
+    SetPoint = 0;
+  }
+
+
+  //Pump set point
+  Pump_SetPoint = int(K_P * error + error_dot * D_P + errorIntegral * I_P);
+  // set saturation limits
+  if (Pump_SetPoint > 180) {
+    Pump_SetPoint = 180;
+  }
+  if (Pump_SetPoint < 120) {
+    Pump_SetPoint = 120;
+  }
+
+
+  // safety limit
+  if (PressureVal > maxAllowedPressure_SpoolUp && PressureVal < 105) {
+    SafteyLimit = 1;
+    SetPoint = 0;
+    ESC.write(0);
+   state = "Pump Saftey Limit";
+  } else {
+    ESC.write(160 + Pump_SetPoint);
+  }
+
+  ValveSetPoints[1] = 255- int(SetPoint);
+
+  if (PressureVal > OperatingPressureLim_Lower && PressureVal < OperatingPressureLim_Upper) {
+
+    PhaseTime = millis() % CycleTime;  // find what point in the cycle we are in
+
+    // Perform amble walk
+
+    if (PhaseTime <= (CycleTime / 4)) {
+
+      ValveSetPoints[2] = 255;
+      ValveSetPoints[3] = 0;
+      ValveSetPoints[4] = 0;
+      ValveSetPoints[5] = 255;
+
+    } else if (PhaseTime > (CycleTime / 4) && PhaseTime <= (CycleTime / 2)) {
+
+      ValveSetPoints[2] = 255;
+      ValveSetPoints[3] = 0;
+      ValveSetPoints[4] = 255;
+      ValveSetPoints[5] = 0;
+
+
+    } else if (PhaseTime > (CycleTime / 2) && PhaseTime <= (3 * CycleTime / 4)) {
+
+      ValveSetPoints[2] = 0;
+      ValveSetPoints[3] = 255;
+      ValveSetPoints[4] = 255;
+      ValveSetPoints[5] = 0;
+
+
+    } else if (PhaseTime > (3 * CycleTime / 4)) {
+
+      ValveSetPoints[2] = 0;
+      ValveSetPoints[3] = 255;
+      ValveSetPoints[4] = 0;
+      ValveSetPoints[5] = 255;
+
+
+    } else {
+      state = "Timing Error";
+    }
+  } else {
+    ValveSetPoints[2] = 0;
+    ValveSetPoints[3] = 0;
+    ValveSetPoints[4] = 0;
+    ValveSetPoints[5] = 0;
+    state = "Outside Muscle-Safe Pressure Range";
+  }
+  // ValveSetPoints[2] = 255;
+  // ValveSetPoints[3] = 0;
+  // ValveSetPoints[4] = 0;
+  // ValveSetPoints[5] = 255;
+  // SetValveState(ValveSetPoints);
+
+  // // Serial.print(setpoint);
+  // Serial.print(", ");
+
+  SetValveState(ValveSetPoints);
+
+  String msg = "P: ";
+  msg = msg + PressureVal + ", Ex. Setpoint: " + SetPoint + ", Pump Setpoint: " + Pump_SetPoint + ", Errors:" + state;
+  Serial.println(msg);
+}
+
+
+void SetValveState(int setPressure[]) {
+
+  for (int i = 0; i < nPins; i++) {
+    analogWrite(SolenoidPins[i], setPressure[i]);
+  }
+}
