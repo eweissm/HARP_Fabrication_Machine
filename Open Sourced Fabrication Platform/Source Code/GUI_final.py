@@ -6,8 +6,8 @@ HARP Machine Controller GUI
 Author: Eric Weissman
 Created: 6/16/2025
 Description:
-    This script provides a graphical user interface (GUI) for controlling a
-    PTCA (Percutaneous Transluminal Coronary Angioplasty) machine using Python
+       This script provides a graphical user interface (GUI) for controlling the
+    HARP Fabrication machine using Python
     and serial communication with an Arduino-based hardware system.
 
     Users can input parameters for tube forming (twist angle, tube length,
