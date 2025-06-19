@@ -1,0 +1,370 @@
+***************************************************************************
+ *  Step-per-Motor Tube-Forming Controller
+ *  --------------------------------------
+ *  Controls a custom machine that cold-draws, twists, and coils thin tubes
+ *  using four open-loop stepper motors.  Commands are received over the
+ *  serial port in the form
+ *
+ *      <Cmd>,<Twist°>,<InitLen mm>,<Tube Ø mm>,<DrawRatio>,
+ *      <FR pitch mm>,<Coil pitch mm>,<Mandrel Ø mm>Z
+ *
+ *  where <Cmd> is one of:
+ *      A – Home all axes
+ *      B – Cold-draw only
+ *      C – Fibre-reinforced (FR) lay-up
+ *      D – Twist only
+ *      E – Coil (helical muscle winding)
+ *      F – Stop (halt everything)
+ *      G/H – Jog follower up / down
+ *      I/J – Jog runner carriage up / down
+ *      K – Spin mandrels continuously
+ *
+ *  Written for an Arduino-Mega-2560 + four external stepper drivers.
+ ***************************************************************************/
+
+#include <MultiStepper.h>
+#include <AccelStepper.h>
+
+// ------------------- Pin assignments -------------------
+// (542-series driver pins on an Arduino Mega)
+
+#define Servo1_pul 54   // Follower (Z-axis) PULSE
+#define Servo2_pul 36   // Upper mandrel PULSE
+#define Servo3_pul 26   // Lower mandrel PULSE
+#define Servo4_pul 60   // Cold-draw runner PULSE
+
+#define Servo1_dir 55   // Follower DIR
+#define Servo2_dir 34   // Upper mandrel DIR
+#define Servo3_dir 28   // Lower mandrel DIR
+#define Servo4_dir 61   // Cold-draw runner DIR
+
+#define Servo1_en  38   // Follower ENABLE  (LOW = enabled)
+#define Servo2_en  30   // Upper mandrel ENABLE
+#define Servo3_en  24   // Lower mandrel ENABLE
+#define Servo4_en  56   // Cold-draw runner ENABLE
+
+// ------------------- Limit-switch inputs -------------------
+#define UpperLim  19    // Follower fully-retracted (top) switch
+#define LowerLim  15    // Follower fully-extended (bottom) switch
+#define runnerLim 18    // Runner carriage reference switch
+
+// -------------------------------------------------------------------
+//                       GLOBAL OBJECTS & CONSTANTS
+// -------------------------------------------------------------------
+
+// Individual steppers (driver mode = PULSE+DIR)
+AccelStepper ColdDrawStepper (AccelStepper::DRIVER, Servo4_pul, Servo4_dir); // Pulls the tube
+AccelStepper FollowerStepper (AccelStepper::DRIVER, Servo1_pul, Servo1_dir); // Moves follower up/down
+AccelStepper UpperMandrelStepper(AccelStepper::DRIVER, Servo2_pul, Servo2_dir); // Spins upper mandrel
+AccelStepper LowerMandrelStepper(AccelStepper::DRIVER, Servo3_pul, Servo3_dir); // Spins lower mandrel
+
+// Convenience groups that move multiple axes synchronously
+MultiStepper FR_Group;      // follower + both mandrels (fibre-reinforced lay-up)
+MultiStepper Coil_Group;    // above + cold-draw runner  (helical coiling)
+
+// -------------- Mechanical ratios & default speeds --------------
+const int   stepsPerRevolution = 400;   // Full-step driver = 400 steps / rev (1.8° with ½-step)
+int   jogSpeed       = 400;             // Speed for manual jogging (steps/s)
+int   coldDrawSpeed  = 400;             // Nominal cold-draw feed (steps/s)
+int   TwistSpeed     = 950;             // Mandrel twist speed  (steps/s)
+float FRSpeed        = 1000;            // Feed rate during FR winding (steps/s)
+
+// Conversion factors (steps ↔ mm) –- tune to your leadscrew & pulley geometry
+float LeadStepsPerMM     = stepsPerRevolution / 8.0;               // 8 mm pitch ball-screw
+float ColdDrawReduction  = 10.0 * (stepsPerRevolution /
+                         (3.14159 * 25.11));                       // 10:1 pulley; 25.11 mm dia capstan
+float TubeLengthBuffer   = 120;   // mm left un-processed after FR/coil section
+float CoilBuffer         = 3;     // Coils “held back” to prevent collisions
+float MandrelDiam        = 3;     // mm – will be overwritten by serial cmd
+float upperMandrelReduction = -5.4; // Gear ratio between motor & upper mandrel
+float SpinSpeed          = 1000;  // Continuous spin speed for mode K (steps/s)
+
+// ----------------------- Dynamic variables -----------------------
+String msg;                 // Raw incoming serial message
+float twistAngle;           // ° desired twist of finished tube
+float InitialTubeLength;    // mm before cold-draw
+float tubeDiameter;         // mm
+float coldDrawRatio;        // Contracting ratio > 1 for drawing
+float FRPitch;              // mm axial pitch during FR lay-up
+float CoilPitch;            // mm pitch of helical coil muscle
+float FinalTubeLength;      // mm after cold-draw
+float Muscle_Length;        // mm length of finished coil section
+float NumCoils;             // (#) helical turns of the coil
+float coilAngle;            // rad pitch angle of helix
+int   buttonMode = 0;       // Current operating mode selected via serial
+
+// -------------------------------------------------------------------
+//                                 SETUP
+// -------------------------------------------------------------------
+void setup()
+{
+  // Configure limit switches with internal pull-ups (active-LOW)
+  pinMode(UpperLim,  INPUT_PULLUP);
+  pinMode(LowerLim,  INPUT_PULLUP);
+  pinMode(runnerLim, INPUT_PULLUP);
+
+  // Enable outputs on all stepper drivers (LOW = ON for most drivers)
+  pinMode(Servo1_en, OUTPUT); digitalWrite(Servo1_en, LOW);
+  pinMode(Servo2_en, OUTPUT); digitalWrite(Servo2_en, LOW);
+  pinMode(Servo3_en, OUTPUT); digitalWrite(Servo3_en, LOW);
+  pinMode(Servo4_en, OUTPUT); digitalWrite(Servo4_en, LOW);
+
+  // Limit the maximum step rate for each axis to protect mechanics
+  ColdDrawStepper     .setMaxSpeed(1000);
+  UpperMandrelStepper .setMaxSpeed(1000);
+  FollowerStepper     .setMaxSpeed(1000);
+  LowerMandrelStepper .setMaxSpeed(1000);
+
+  // High accelerations give crisp motion; tune if motors stall
+  ColdDrawStepper     .setAcceleration(100000);
+  UpperMandrelStepper .setAcceleration(100000);
+  FollowerStepper     .setAcceleration(100000);
+  LowerMandrelStepper .setAcceleration(100000);
+
+  // Build MultiStepper groups (order matters!)
+  FR_Group.addStepper(FollowerStepper);
+  FR_Group.addStepper(UpperMandrelStepper);
+  FR_Group.addStepper(LowerMandrelStepper);
+
+  Coil_Group.addStepper(FollowerStepper);
+  Coil_Group.addStepper(UpperMandrelStepper);
+  Coil_Group.addStepper(LowerMandrelStepper);
+  Coil_Group.addStepper(ColdDrawStepper);
+
+  Serial.begin(9600);   // Console at 9600 baud
+}
+
+// -------------------------------------------------------------------
+//                              MAIN LOOP
+// -------------------------------------------------------------------
+void loop()
+{
+  //------------------------------------------------------------------
+  // 1) Parse serial commands (expected to end with ‘Z’ sentinel)
+  //------------------------------------------------------------------
+  if (Serial.available())
+  {
+    /*
+      Example frames:
+        A,35,100,2.6,8,7,3Z   -> Home & preload parameters
+        B,35,220,2.5,12,6,3Z  -> Cold-draw
+        ...
+    */
+    msg = Serial.readStringUntil('Z');
+
+    // Extract comma-separated fields
+    String CommandString = getValue(msg, ',', 0);
+    twistAngle      = getValue(msg, ',', 1).toFloat();
+    InitialTubeLength = getValue(msg, ',', 2).toFloat();
+    tubeDiameter    = getValue(msg, ',', 3).toFloat();
+    coldDrawRatio   = getValue(msg, ',', 4).toFloat();
+    FRPitch         = getValue(msg, ',', 5).toFloat();
+    CoilPitch       = getValue(msg, ',', 6).toFloat();
+    MandrelDiam     = getValue(msg, ',', 7).toFloat();
+
+    // Pre-compute geometry once per frame (saves CPU in loop)
+    FinalTubeLength = coldDrawRatio * InitialTubeLength;
+
+    NumCoils = (FinalTubeLength - TubeLengthBuffer) /
+               sqrt(CoilPitch * CoilPitch +
+                    pow(3.14159 * (MandrelDiam + tubeDiameter), 2))
+               - CoilBuffer;
+
+    Muscle_Length = NumCoils * CoilPitch;
+
+    coilAngle = atan2(CoilPitch,
+                     3.14159 * (MandrelDiam + tubeDiameter));
+
+    // Map ASCII command to internal mode number
+    if      (CommandString.equals("A")) buttonMode = 1;  // Home
+    else if (CommandString.equals("B")) buttonMode = 2;  // Cold-draw
+    else if (CommandString.equals("C")) buttonMode = 3;  // FR lay-up
+    else if (CommandString.equals("D")) buttonMode = 4;  // Twist
+    else if (CommandString.equals("E")) buttonMode = 5;  // Coil
+    else if (CommandString.equals("F")) buttonMode = 0;  // Stop
+    else if (CommandString.equals("G")) buttonMode = 6;  // Manual follower ↑
+    else if (CommandString.equals("H")) buttonMode = 7;  // Manual follower ↓
+    else if (CommandString.equals("I")) buttonMode = 8;  // Runner ↑
+    else if (CommandString.equals("J")) buttonMode = 9;  // Runner ↓
+    else if (CommandString.equals("K")) buttonMode = 10; // Continuous spin
+    else                               buttonMode = 0;  // Unknown → Stop
+  }
+
+  //------------------------------------------------------------------
+  // 2) Execute the current mode (state-machine style)
+  //------------------------------------------------------------------
+  if (buttonMode == 0)             // -------- STOP ------------
+  {
+    ColdDrawStepper .stop();
+    UpperMandrelStepper.stop();
+    FollowerStepper .stop();
+    LowerMandrelStepper.stop();
+  }
+  else if (buttonMode == 1)        // -------- HOME ------------
+  {
+    // Jog follower upward until it hits the upper hard-stop, then
+    // back-off 10 mm and zero all motor positions.
+    if (digitalRead(UpperLim) == HIGH)
+    {
+      FollowerStepper.setSpeed(jogSpeed * 2); // fast approach
+      FollowerStepper.runSpeed();
+    }
+    else
+    {
+      FollowerStepper.setSpeed(jogSpeed);
+      FollowerStepper.move(long(-10.0 * LeadStepsPerMM)); // back-off
+      FollowerStepper.runToPosition();
+
+      // Reset encoders/origin for all axes
+      ColdDrawStepper     .setCurrentPosition(0);
+      UpperMandrelStepper .setCurrentPosition(0);
+      FollowerStepper     .setCurrentPosition(0);
+      LowerMandrelStepper .setCurrentPosition(0);
+
+      buttonMode = 0; // Done → idle
+    }
+  }
+  else if (buttonMode == 2)        // -------- COLD DRAW -------
+  {
+    float ColdDrawLength = (FinalTubeLength - InitialTubeLength) *
+                           ColdDrawReduction;  // steps
+
+    ColdDrawStepper.setSpeed(coldDrawSpeed);
+    ColdDrawStepper.move(long(ColdDrawLength));
+
+    buttonMode = -1;               // Switch to “run-to-pos” below
+  }
+  else if (buttonMode == 3)        // -------- FR LAY-UP -------
+  {
+    long Target[3];
+
+    float FR_Length = FinalTubeLength - TubeLengthBuffer; // mm of FR
+
+    Target[0] = long(-FR_Length * LeadStepsPerMM);               // Follower Z
+    Target[1] = long(upperMandrelReduction * stepsPerRevolution *
+                     (FR_Length / FRPitch));                     // Upper mandrel
+    Target[2] = -long(stepsPerRevolution *
+                     (FR_Length / FRPitch));                     // Lower mandrel
+
+    FR_Group.moveTo(Target);
+    FR_Group.run();                 // Synchronous multi-axis move
+  }
+  else if (buttonMode == 4)        // -------- TWIST ----------
+  {
+    // Compute # of full barrel twists needed after drawing
+    float numTwists = sin(twistAngle * 3.14159 / 180.0) *
+                      FinalTubeLength /
+                      (2 * 3.14159 * tubeDiameter);
+
+    LowerMandrelStepper.setSpeed(TwistSpeed);
+    LowerMandrelStepper.move(long(numTwists * stepsPerRevolution));
+    LowerMandrelStepper.runToPosition();
+
+    buttonMode = -1;
+  }
+  else if (buttonMode == 5)        // -------- COIL ----------
+  {
+    long Target[4];
+
+    // 1) Follower translation
+    Target[0] = long(-Muscle_Length * LeadStepsPerMM);
+
+    // 2) Upper mandrel rotation (with reduction)
+    Target[1] = long(upperMandrelReduction * stepsPerRevolution *
+                     (Muscle_Length / CoilPitch));
+
+    // 3) Lower mandrel rotation (accounts for writhe)
+    Target[2] = long(-(1 - cos(coilAngle)) * stepsPerRevolution *
+                     (Muscle_Length / CoilPitch));
+
+    // 4) Cold-draw runner back-feeds the excess tube
+    Target[3] = -(FinalTubeLength - Muscle_Length - TubeLengthBuffer -
+                  CoilBuffer *
+                  sqrt(CoilPitch * CoilPitch +
+                       pow(3.14159 * (MandrelDiam + tubeDiameter), 2)))
+                * ColdDrawReduction;
+
+    Coil_Group.moveTo(Target);
+    Coil_Group.run();
+  }
+  else if (buttonMode == 6)        // -------- MANUAL FOLLOWER ↑
+  {
+    FollowerStepper.setSpeed(jogSpeed * 2);
+    FollowerStepper.runSpeed();
+  }
+  else if (buttonMode == 7)        // -------- MANUAL FOLLOWER ↓
+  {
+    FollowerStepper.setSpeed(-jogSpeed * 2);
+    FollowerStepper.runSpeed();
+  }
+  else if (buttonMode == 8)        // -------- RUNNER ↑ -------
+  {
+    ColdDrawStepper.setSpeed(-2 * coldDrawSpeed);
+    ColdDrawStepper.runSpeed();
+  }
+  else if (buttonMode == 9)        // -------- RUNNER ↓ -------
+  {
+    ColdDrawStepper.setSpeed( 2 * coldDrawSpeed);
+    ColdDrawStepper.runSpeed();
+  }
+  else if (buttonMode == 10)       // -------- CONTINUOUS SPIN
+  {
+    UpperMandrelStepper.setSpeed(SpinSpeed);
+    LowerMandrelStepper.setSpeed(SpinSpeed / 5.735);
+  }
+
+  //------------------------------------------------------------------
+  // 3) Safety-interlock: stop if any limit trip (outside homing)
+  //------------------------------------------------------------------
+  if ((digitalRead(UpperLim)  == LOW ||
+       digitalRead(LowerLim)  == LOW ||
+       digitalRead(runnerLim) == LOW) && buttonMode != 1)
+  {
+    if (digitalRead(runnerLim) == LOW)      // Runner hit?
+    {
+      // Back off 1 mm to clear switch
+      FollowerStepper.move(long(LeadStepsPerMM * 1.0));
+      FollowerStepper.runToPosition();
+    }
+
+    // Immediate halt
+    ColdDrawStepper .stop();
+    UpperMandrelStepper.stop();
+    FollowerStepper .stop();
+    LowerMandrelStepper.stop();
+    buttonMode = 0;
+  }
+
+  //------------------------------------------------------------------
+  // 4) Keep the steppers moving (non-blocking)
+  //------------------------------------------------------------------
+  if (buttonMode != 3 && buttonMode != 5) // FR/Coil handled by groups
+  {
+    ColdDrawStepper .run();
+    UpperMandrelStepper.run();
+    FollowerStepper .run();
+    LowerMandrelStepper.run();
+  }
+}
+
+// -------------------------------------------------------------------
+//          Utility: split a String by separator and return field
+// -------------------------------------------------------------------
+String getValue(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = { 0, -1 };
+  int maxIndex = data.length() - 1;
+
+  for (int i = 0; i <= maxIndex && found <= index; i++)
+  {
+    if (data.charAt(i) == separator || i == maxIndex)
+    {
+      found++;
+      strIndex[0] = strIndex[1] + 1;
+      strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    }
+  }
+  return found > index ?
+         data.substring(strIndex[0], strIndex[1]) : "";
+}
