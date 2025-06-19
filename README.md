@@ -111,6 +111,8 @@ Enclosed in this repository is:
 ## Introduction
 Note: we have seperated the "work heads" (the parts which grab or directly interact with the muscles) since these parts are often modified for specific muscles being fabricated
 
+All CAD files are available at: https://drive.google.com/file/d/1xYBZDvEFsWa6yzu25zHiumR-syyz0bKK/view?usp=sharing
+
 
 ## TODO: ADD FullAssembly cad file!!!!!!!!
 
