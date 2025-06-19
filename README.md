@@ -64,18 +64,11 @@ Enclosed in this repository is:
 
 ```plaintext
 ├── Open Sourced Fabrication Platform
-│   └──___.pdf
-│   └──tutorialVideo.mp4
+│   └──HARP Fabrication Machine Build Instructions.pdf
 │   └──CAD Files
-│   │   └── FullAssembly.sldasm
-│   │   └── FullAssembly.step
-│   │   └── ComponentNamingTraker.xlsx
-│   │   └── Part Files
-│   │   └── Work Heads
 │   ├──Source Code
-│   ├──HARP_GUI.exe
-│   ├──GUI_UserGuide.pdf
-│   ├──Electric_Schematics.pdf
+│   ├──GUI.exe
+│   ├──UserGuide.pdf
 ├── GeometricHARP_CADFiles
 ├── Easy Fabrication Resources
 │   └── BOM.xlxs
