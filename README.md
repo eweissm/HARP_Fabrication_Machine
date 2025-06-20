@@ -64,38 +64,38 @@ Enclosed in this repository is:
 
 ```plaintext
 ├── Open Sourced Fabrication Platform
-│   └──HARP Fabrication Machine Build Instructions.pdf
-│   └──CAD Files
+│   ├──HARP Fabrication Machine Build Instructions.pdf
+│   ├──CAD Files
 │   ├──Source Code
 │   ├──GUI.exe
-│   ├──UserGuide.pdf
+│   └──UserGuide.pdf
 ├── GeometricHARP_CADFiles
 ├── Easy Fabrication Resources
-│   └── BOM.xlxs
+│   ├── BOM.xlxs
 │   └── HARPIntructions.pdf
 ├── Untethered_HARP_Quadruped
-│   └── BOM.xls
+│   ├── BOM.xls
 │   └──CAD Files/
 │   │   └──LongLegQuadAssembly Final.STEP
-│   └── Simulation/
+│   ├── Simulation/
 │   │   └── QuadLegModel_5_1.m
-│   └── Electronics/
-│   │   └── Quadruped+Board.zip
+│   ├── Electronics/
+│       └── Quadruped+Board.zip
 ├── HarpController
 ├── HARP Continuum Robot Control
-│   └── ContinuumRobotArduino.ino
-│   └── ContinuumRobotControl_Modelless.py
-│   └── ContinuumRobotControl_Modelless_BODE.py
-│   └── ContinuumRobotControl_ConstantCurvature.py
-│   └── ContinuumRobotControl_ConstantCurvature_BODE.py
-│   └── SerialCommunicator.py
-│   └── NatNetClient.py
-│   └── DataDescriptions.py
-│   └── MoCapData.py
-│   └── RobotLineArt/
-│   │     └── ASUlogo.svg
-│   └── RobotData/
-│         └── robot_log_*.csv
+    ├── ContinuumRobotArduino.ino
+    ├── ContinuumRobotControl_Modelless.py
+    ├── ContinuumRobotControl_Modelless_BODE.py
+    ├── ContinuumRobotControl_ConstantCurvature.py
+    ├── ContinuumRobotControl_ConstantCurvature_BODE.py
+    ├── SerialCommunicator.py
+    ├── NatNetClient.py
+    ├── DataDescriptions.py
+    ├── MoCapData.py
+    ├── RobotLineArt/
+    │     └── ASUlogo.svg
+    └── RobotData/
+          └── robot_log_*.csv
 ```
 
 ---
