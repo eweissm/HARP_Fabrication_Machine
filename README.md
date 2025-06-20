@@ -10,6 +10,9 @@ Enclosed in this repository is:
 5.  The continuum robot controllers
 6.  All design files and codes for the untethered quadruped
 
+For any technical questions, please contact us at eweissm1@asu.edu
+
+
 ## Table of Contents
 
 - [HARP Replication Resources](#harp-replication-resources)
@@ -81,10 +84,10 @@ Enclosed in this repository is:
 │   │   └──LongLegQuadAssembly Final.STEP
 │   ├── Simulation/
 │   │   └── QuadLegModel_5_1.m
-│   ├── Electronics/
+│   └── Electronics/
 │       └── Quadruped+Board.zip
 ├── HarpController
-├── HARP Continuum Robot Control
+└── HARP Continuum Robot Control
     ├── ContinuumRobotArduino.ino
     ├── ContinuumRobotControl_Modelless.py
     ├── ContinuumRobotControl_Modelless_BODE.py
@@ -103,13 +106,43 @@ Enclosed in this repository is:
 ---
 # Open Sourced HARP Fabrication Machine
 
-## Introduction
-Note: we have seperated the "work heads" (the parts which grab or directly interact with the muscles) since these parts are often modified for specific muscles being fabricated
-
-All CAD files are available at: https://drive.google.com/file/d/1xYBZDvEFsWa6yzu25zHiumR-syyz0bKK/view?usp=sharing
+We provide all necessary documentation needed to replicate our HARP Fabrication Platform and to use the platform here.
 
 
-## TODO: ADD FullAssembly cad file!!!!!!!!
+A complete Bill of materials is available at: Open Sourced Fabrication Platform/BillOfMaterials.xlsx
+
+
+CAD files are available at: https://drive.google.com/file/d/1xYBZDvEFsWa6yzu25zHiumR-syyz0bKK/view?usp=sharing
+
+
+Additional CAD files for work head (the parts which directly interact with the tube and are subject to frequent alterations based on the HARP parameters) can be found at: Open Sourced Fabrication Platform/CAD Files/Follower Work Heads
+
+
+A detailed build guide can be found at: Open Sourced Fabrication Platform/HARP Fabrication Machine Build Instructions.pdf
+
+
+Detailed usage instructions are available at: Open Sourced Fabrication Platform/HARP Fabrication Platform User Guide.pdf
+
+
+A custom GUI for the machine is available at: Open Sourced Fabrication Platform/GUI.exe
+
+
+All Source code for the control board and the GUI can be found at: Open Sourced Fabrication Platform/Source Code
+
+
+## Open Source and Community Collaboration
+
+This machine and its associated documentation are proudly released as open source in the spirit of transparency, accessibility, and innovation. Our goal is to make advanced tools more widely available and to foster a community of builders, tinkerers, and researchers who can contribute to and benefit from this platform.
+
+We welcome contributions of all kinds—whether it's improvements to the hardware design, software enhancements, new features, bug fixes, or updated documentation. Your ideas, feedback, and real-world testing are vital to making this system better for everyone.
+
+If you have suggestions, encounter issues, or develop something new with this platform, please consider:
+-  Submitting pull requests or issues on our GitHub repository
+-  Contacting us directly
+
+  
+Together, we can build a more capable, safe, and flexible system for everyone.
+
 
 ---
 
