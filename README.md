@@ -65,6 +65,8 @@ Enclosed in this repository is:
 ```plaintext
 ├── Open Sourced Fabrication Platform
 │   ├──HARP Fabrication Machine Build Instructions.pdf
+│   ├──BOM.xlsx
+│   ├──Part Name Tracker.xlsx
 │   ├──CAD Files
 │   ├──Source Code
 │   ├──GUI.exe
